@@ -1,0 +1,28 @@
+name: TriMind Garmin Sync
+
+on:
+  schedule:
+    - cron: '30 10 * * *'  # 7:30 horário de Brasília (UTC-3)
+  workflow_dispatch:  # permite rodar manualmente
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install garminconnect
+      
+      - name: Run Garmin sync
+        env:
+          GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python trimind_sync.py
