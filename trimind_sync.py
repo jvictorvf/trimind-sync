@@ -24,6 +24,109 @@ def supabase_upsert(table, data, conflict_col="user_id,date"):
         print(f"Supabase error: {e}")
         return False
 
+
+
+def sync_activities(api, today):
+    import datetime
+    yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
+    
+    # Tipos a ignorar (Zwift duplica o indoor_cycling como virtual_ride)
+    SKIP_TYPES = {"virtual_ride", "e_bike_fitness", "other"}
+    
+    # Mapeamento de tipos Garmin -> esportes do app
+    SPORT_MAP = {
+        "running": "run",
+        "trail_running": "run",
+        "treadmill_running": "run",
+        "cycling": "bike",
+        "indoor_cycling": "bike",
+        "mountain_biking": "bike",
+        "swimming": "swim",
+        "open_water_swimming": "swim",
+        "strength_training": "strength",
+        "fitness_equipment": "strength",
+    }
+    
+    try:
+        activities = api.get_activities_by_date(yesterday, today)
+        if not activities:
+            print("Nenhuma atividade encontrada")
+            return
+        
+        saved = 0
+        for act in activities:
+            act_type = act.get("activityType", {}).get("typeKey", "other")
+            
+            # Pular Zwift e tipos duplicados
+            if act_type in SKIP_TYPES:
+                print(f"Ignorando duplicata: {act.get('activityName')} ({act_type})")
+                continue
+            
+            sport = SPORT_MAP.get(act_type)
+            if not sport:
+                print(f"Tipo desconhecido ignorado: {act_type}")
+                continue
+            
+            dur_s = int(act.get("duration", 0))
+            dist_m = int(act.get("distance", 0))
+            avg_hr = act.get("averageHR")
+            max_hr = act.get("maxHR")
+            avg_power = act.get("avgPower")
+            avg_speed = act.get("averageSpeed")
+            avg_speed_kmh = round(avg_speed * 3.6, 1) if avg_speed else None
+            start_time = act.get("startTimeLocal", "")
+            date = start_time[:10] if start_time else yesterday
+            title = act.get("activityName", sport.upper())
+            
+            workout = {
+                "user_id": USER_ID,
+                "date": date,
+                "sport": sport,
+                "title": title,
+                "status": "completed",
+                "actual_duration_s": dur_s,
+                "actual_distance_m": dist_m,
+            }
+            if avg_hr: workout["avg_hr"] = int(avg_hr)
+            if max_hr: workout["max_hr"] = int(max_hr)
+            if avg_power: workout["avg_power_watts"] = int(avg_power)
+            if avg_speed_kmh: workout["avg_speed_kmh"] = avg_speed_kmh
+            
+            # Verificar se já existe antes de inserir
+            check_url = f"{SUPABASE_URL}/rest/v1/workouts?user_id=eq.{USER_ID}&date=eq.{date}&sport=eq.{sport}&select=id"
+            import urllib.request
+            req = urllib.request.Request(check_url)
+            req.add_header("apikey", SUPABASE_KEY)
+            req.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
+            try:
+                import json
+                resp = urllib.request.urlopen(req)
+                existing = json.loads(resp.read())
+                if existing:
+                    print(f"Ja existe: {sport} {date} — pulando")
+                    continue
+            except: pass
+            
+            # Inserir novo treino
+            ins_url = f"{SUPABASE_URL}/rest/v1/workouts"
+            body = json.dumps(workout).encode()
+            req2 = urllib.request.Request(ins_url, data=body, method="POST")
+            req2.add_header("apikey", SUPABASE_KEY)
+            req2.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
+            req2.add_header("Content-Type", "application/json")
+            req2.add_header("Prefer", "return=minimal")
+            try:
+                urllib.request.urlopen(req2)
+                print(f"Treino salvo: {sport} {date} {dur_s//60}min FC:{int(avg_hr) if avg_hr else '?'}bpm")
+                saved += 1
+            except Exception as e:
+                print(f"Erro ao salvar treino: {e}")
+        
+        print(f"{saved} treino(s) novo(s) sincronizado(s)")
+    except Exception as e:
+        print(f"Atividades erro: {e}")
+
+
 def sync():
     today = datetime.date.today().isoformat()
     print(f"Sincronizando {today}...")
@@ -64,6 +167,9 @@ def sync():
         print(f"Salvo! {len(metrics)-2} metricas sincronizadas")
     else:
         print("Erro ao salvar")
+    
+    # Sincronizar treinos
+    sync_activities(api, today)
 
 if __name__ == "__main__":
     sync()
