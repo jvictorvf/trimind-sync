@@ -1,14 +1,13 @@
 import sys, os
 sys.path.insert(0, '/Users/josevictorfrancisco/Library/Python/3.9/lib/python/site-packages')
 from garminconnect import Garmin
-import datetime, urllib.request, json
+import datetime, urllib.request, urllib.parse, json
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://rotzznmlcrqwtrxesezn.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJvdHp6bm1sY3Jxd3RyeGVzZXpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzODEwMTgsImV4cCI6MjA5NDk1NzAxOH0.rbGvnLTvWRmA-217TBplQXPTWHeZHUmkaeMk_BSfLp0")
 USER_ID = "4385160f-c76f-4649-973f-fb0f8f92065b"
 GARMIN_EMAIL = os.environ.get("GARMIN_EMAIL", "jvictorvf@hotmail.com")
 GARMIN_PASSWORD = os.environ.get("GARMIN_PASSWORD", "Iglu45220052.")
-
 RACE_DATE = datetime.date(2026, 9, 20)
 
 def supabase_upsert(table, data, conflict_col="user_id,date"):
@@ -40,7 +39,7 @@ def supabase_query(table, params=""):
         return []
 
 def sync_trainingpeaks():
-    TP_COOKIE = os.environ.get("TP_COOKIE", "Production_tpAuth=V001aheYPkwmKUmw75FR4_utn_e8GPafFLnjYbL212ZOIGtAToHIO0BarKJ9NdVazjlDi8TVSEscv1o-Pq7tNReQZsost2oCu_vB21QgDf6EB4Dph2LB3qKgk6po9yR8w4J8wU0ZP6-4qxgUGfHNRr171SIcBcxQ3pvwaiv4fHvCK6rbXnSuH3fJ6atZvEha_KojBcGBfCSI5q-uxWEZUoSrYnhN6_gVTcjVHcC21AIQccfVEx3YWzQiy8zYI2Anf5zAyeCWnx_TQ_uKzf0g7VBBy7J83p12Ks2lUeEpVPLjQVZuSytAp4056HH2_8ZVDP-2KN3CaxS-eCi1EqyWsOcYG1WH2pQ-fB2dC7x8ZVeY3t1h4eeSLzrl8xAqdKEP9q1OTXx3j0lcFSJl-E-oBOMQGNiAmVcMikejnwQjBYMd9JH5xcH4gdvek4kXkeL7esaUsoxGGa8tO9ZEiIA0q_B0nsKXxMaCpvvxugotaJggNpl0gtVdDegmml9wcFrw1eKMEMLxP6hm4ooq8gpT-BHfzkX2ACh3kCHstWPk-zTXp0g1-aGIEKKIhr4Sur4dTNAIQMPw69uxPC6ChLMiw9RX5GldWoqHFZqeIulaL7ZmUmC9gBgIHfMVJevBqFYc1u1eWUetP5egNlYuYHVqRFGdA3yv5PKBAlUtvMsK3dQIezVHXQPx_chFyrYG5G2DV4WOeU0JmMuM1YOchlv5nfzukFQHJeilELy06nWDFs_JxjpREjUGYrVj539Rrzc4ifYryX34c6pqRFabCm3SXI2f6lhanpkl8N-16z8kfSv7aIJFCXTCu0B6TxMrS8spCKR4NrPvG5m9byBOfcfir_5C_u6jOaT0A3VAXk7kz4gAhpLcs89Ce8yf-vrW5v1kl7KQalqSs_-4z8xCnZ8xDIzTiDEp-F4Rd6zBOHSzh0bcQyzAnLAXeLFkWLaYXFlIm0AkNVZe3fvBCTKADHWMcpMPEEDRXSxaq4v2ZOYF0Gb_bq9Vg7EmLqvgPNG23V3aP_CBD7Yv5eFToufrhS7_JEtPZEkq2nKzI4aPXfdhqlJ8a-63Rdc846uR3ecuvx4ATTMt6JKrmwXyDXSoBlc0atVWy4PQQd6TbpvuPNHQF3p40Y8HZ_88G-nl5ZqYqVFY2d6Ano-E7obBuN6uTBDz7_2a1pkY8-XicuppmD9pjZNJfjOJBQsR3Xm1GDCYLady5w8N4B_cPp2oSacgcF4_kW4b57auc8UeH-xoki9wpFpFoGG7yXhlgYx0d3WUe1txRgySP7W2lOAOzoCAQh4KwitwJ2L3iNEl0ocWcZ1KewOeR7izQ22IljiCWk8huiTmVsCz0aEOHU56DA-hLb_QvHM2nuqNFKrW4ResEdf2mJ-kHddSyyCmpTUnLHj7JyHsMHm3PCIgPFI-ioVBurqCrQw5SNeBSKxuTarkTrkmlGdVszp04MLekXQG5hFuy8kXB8OzBbtF7534U_hBH5Hd75HVa8m1P6b2DAmNBNCd6Z3BWLml8yvBAWQIaWa5uOyu2PmW9qdfBwxTJhIC-mhGqKNPjo2TifjVmfOYO4kdEUHbdzqyOssg46Xg44Ck0PBrVr3VHsYH4hPI2m2h0-2mdUjMYKkaPXGGeHIClwQ1z22V0Fzu4_1eRtaPqAFtfUW3uX-LoIpaNNLnwrUjB63i9FQ83hFD8YjeaFVy_8ts11uyQYGD0sMwjwHx_suNa9rny-Gdse4Hrd5Ovt-wojAVy_sQR-uVMHDnaXmdRSlDb_TOoTs1")
+    TP_COOKIE = os.environ.get("TP_COOKIE", "Production_tpAuth=V001BoeeeulrGEKDBJ_RkxOs3868FH8wcMZLaz5rQ0m3zS-wkoJdTbeSF96bbFpBdm4AyTPzPNIe2hLhtSziuTMfZwU_DRrWyR6elN-puY8HjKu0dMKucfe4RvXTIqjqaIjrfLIxkFR4y1WOGcShqLuHHsJYKbBt5KPL1SmhB9X4wtnVaWJmTLLwhYZT3-11_2yAngSoQYn551UFInHZlsYBtMqqqRDaFMXtXrdx2RI3M60eiAWqn42i5ggROi64WXLFoRPzHOXdTVwL-je977QUkmZIPUU7zQmzuhnuUA6wkdqjhiFeKkcCG_RVz6rRzClOyvFj5dberPx_nwRt3D8BFfcpMP3SjRSnM3HCWMUzxW-98CM40tLHZpst8rOTFvYm3hC97e775cLNz78zHWWZQuk6ON58hF0gNnT9-fuzmRl9IvF9u4Gef8pVs4gv0APyL9AmAVt7n3vtjZDqV2CusSs2iOBwlHvH_my5vSJ8A1uE3PMra5OHVT-TRs-F4hNxaMl7DDI47whOp1CTZe_XoBNWSkyNR-20FkF_bndziiT5FqWEUlGj0wXKW2qxFNJRO_iPy6E5c00ZBhfWRo9uG43HY9mGedjPnKlvf96B5lyNnWrqvbg4Amgge87VxwWxXdWDgwNh6wV8yIVecdG98CxUT0XYJTwRXmNRS9G-Wx2V3buFi7xH2QAfrZQV772_Rh-yvrLvsGZJRMf-2thMEGBycmjR6Y0KuToZIhCIBHWEzwtcDJlHWUNeKmocdyZbFOqBhOSPjdoAVGn-tnR6YFYRTfwDqCeIIssat2Qw4KpMSQZ1NRMUcAx0NvBqwJlkOe4RRVWnspCty2ewAkjy4ij66AWPbgPuUzNnLr15zKmLEOii-heJPP-C5TRra5Xvk_OXNFL1hBPUAy7Cpq0BiM9UIde0ofWgdiwI0JjzyRuqxDkZ536bTSKzTyGiz3Z9a62kcT_YksjrxembTGlvK0mJJj25a0brErrhDJaQLCMiQe4OzDhdRA-Ns15_7RIljAiZiNIOfTzKNbyw49JcAkg7IxRZxFiY4Xcz7hUrtYGvtpRuagSEo740IjCcX7KVl7BJoZcYDXHGU4JeYJyFUB6OkbkfL2b4n3Ztjo5aAxpz00TgYyufBoPfdkCGoA2KlMNi9HXnPzUxIjpT8x3dWIHArDW5LfsGgtFYhIhfLcn_WDURkRZ21FCTQEnnb3Oe0A0NIKMXZwfDgPgycXphD81cWhKM91PvQgnlllBViXmgBbQe29J83JQYO9X2ffK_EoEZpMd-DlWikWJQA_h4ru1G5Udly3UZpz7EKRFW614WhpNgBUWNJ24zNZfULnmY-0Ba26axaHqXdTTaFMxoBDfOLNDo0tulcfi9v7ml8mrGsvkDdcZgOE6AmojxmzULLWxG_KAGvLTxevfNBEj3AkNjxb6OhHhDQxRsrznSDH48dU-ziHGRGqbtIbfpwD0hECsJaY68o_xB_RIDboKyIuCuKfSloqO6UoqBNh7Vs-pB8bfqWtFAZfXv8daT81bpw53TzmN53VIqzlpg9cv5L6DRvRoxqp27xs3WbCL-ACVwsdrgbSgoGxul29ljktbVq_iP_HwCdBGX4kADEWMEOf75uL59jRER5XNDb84c_btg-4DY0A0o8ug7CMmO0LrBLrAUCoWai5zSg5VCLOqoDYJKLCFfqN9LJptrZH2HcGGD2HZmTVW3F3oz-kheHi9ZAlBS9N4w_iRHs49Ny13Vrzx-vJEnfW3oGHsE-RIc0so1")
 
     today = datetime.date.today()
     start = today.isoformat()
@@ -95,35 +94,15 @@ def sync_trainingpeaks():
         return
     print(f"TP athlete ID: {athlete_id}")
 
-    # CTL / ATL / TSB
-    ctl = atl = tsb = None
-    load_data = tp_get(f"/fitness/v1/athletes/{athlete_id}/fitness")
-    if not load_data:
-        load_data = tp_get(f"/fitness/v6/athletes/{athlete_id}/fitness/{start}/{start}")
-    if load_data:
-        entry = load_data[-1] if isinstance(load_data, list) and load_data else load_data if isinstance(load_data, dict) else {}
-        ctl = entry.get("ctl") or entry.get("CTL") or entry.get("fitnessScore")
-        atl = entry.get("atl") or entry.get("ATL") or entry.get("fatigueScore")
-        tsb = entry.get("tsb") or entry.get("TSB") or entry.get("formScore")
-        if ctl or atl or tsb:
-            print(f"Carga: CTL={ctl} ATL={atl} TSB={tsb}")
-        else:
-            print(f"TP: CTL/ATL/TSB nao encontrado (campos disponiveis: {list(entry.keys())[:8]})")
-    else:
-        print("TP: endpoint fitness nao disponivel")
-
-    # Semanas ate a prova
     weeks_to_race = round((RACE_DATE - today).days / 7, 1)
     print(f"Semanas ate IRONMAN 70.3 SP: {weeks_to_race}")
 
-    # Compliance 4 semanas
     four_weeks_ago = (today - datetime.timedelta(days=28)).isoformat()
     completed_workouts = supabase_query("workouts", f"user_id=eq.{USER_ID}&date=gte.{four_weeks_ago}&date=lt.{start}&status=eq.completed&select=id")
     planned_past = supabase_query("planned_workouts", f"user_id=eq.{USER_ID}&date=gte.{four_weeks_ago}&date=lt.{start}&select=id")
     compliance_pct = round(len(completed_workouts) / len(planned_past) * 100) if planned_past else None
     print(f"Compliance 4 semanas: {len(completed_workouts)}/{len(planned_past)} = {compliance_pct}%")
 
-    # Treinos planejados
     workouts = tp_get(f"/fitness/v6/athletes/{athlete_id}/workouts/{start}/{end}")
     if not workouts:
         print("TP: sem treinos encontrados")
@@ -131,10 +110,9 @@ def sync_trainingpeaks():
     if isinstance(workouts, dict):
         workouts = workouts.get("workouts", workouts.get("items", []))
 
-    # Fase do plano
     def detect_plan_phase(wlist):
         titles = " ".join([w.get("title","") for w in wlist]).upper()
-        if any(x in titles for x in ["TAPER", "AFUNILAMENTO", "RACE WEEK"]): return "taper"
+        if any(x in titles for x in ["TAPER", "AFUNILAMENTO"]): return "taper"
         if weeks_to_race <= 2: return "taper"
         if any(x in titles for x in ["VO2", "VMAX", "INTENSIDADE"]): return "build"
         if weeks_to_race <= 10: return "build"
@@ -151,17 +129,12 @@ def sync_trainingpeaks():
     )
     print(f"TSS planejado proximos 7 dias: {round(weekly_tss_planned)}")
 
-    # Salvar contexto em daily_metrics
     plan_context = {"user_id": USER_ID, "date": start, "weeks_to_race": weeks_to_race, "plan_phase": plan_phase}
     if weekly_tss_planned: plan_context["weekly_tss_planned"] = round(weekly_tss_planned)
     if compliance_pct is not None: plan_context["compliance_4w_pct"] = compliance_pct
-    if ctl is not None: plan_context["ctl"] = float(ctl)
-    if atl is not None: plan_context["atl"] = float(atl)
-    if tsb is not None: plan_context["tsb"] = float(tsb)
     supabase_upsert("daily_metrics", plan_context)
-    print(f"Contexto do plano salvo!")
+    print("Contexto do plano salvo!")
 
-    # Salvar treinos planejados
     saved = 0
     for w in workouts:
         date = (w.get("workoutDay") or "")[:10]
@@ -180,7 +153,6 @@ def sync_trainingpeaks():
         coach_notes = w.get("coachComments") or w.get("description") or ""
         tss = w.get("tssPlanned") or None
         dist_m = w.get("distancePlanned") or None
-        if_planned = w.get("ifPlanned") or None
         workout_category = detect_workout_category(title)
 
         planned = {
@@ -192,9 +164,10 @@ def sync_trainingpeaks():
         if coach_notes: planned["coach_notes"] = str(coach_notes)[:500]
         if tss: planned["tss_planned"] = float(tss)
         if dist_m: planned["distance_planned_m"] = round(float(dist_m))
-        if if_planned: planned["if_planned"] = float(if_planned)
 
-        del_url = f"{SUPABASE_URL}/rest/v1/planned_workouts?user_id=eq.{USER_ID}&date=eq.{date}&sport=eq.{sport}"
+        # Deletar por date+title para evitar duplicatas
+        title_encoded = urllib.parse.quote(title)
+        del_url = f"{SUPABASE_URL}/rest/v1/planned_workouts?user_id=eq.{USER_ID}&date=eq.{date}&title=eq.{title_encoded}"
         del_req = urllib.request.Request(del_url, method="DELETE")
         del_req.add_header("apikey", SUPABASE_KEY)
         del_req.add_header("Authorization", f"Bearer {SUPABASE_KEY}")
@@ -250,7 +223,7 @@ def sync_activities(api, today):
             start_time = act.get("startTimeLocal", "")
             date = start_time[:10] if start_time else yesterday
             title = act.get("activityName", sport.upper())
-            tss_garmin = act.get("trainingStressScore") or act.get("tss") or None
+            tss_garmin = act.get("trainingStressScore") or None
 
             workout = {
                 "user_id": USER_ID, "date": date, "sport": sport,
