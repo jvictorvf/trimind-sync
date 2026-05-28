@@ -20,7 +20,7 @@ SKIP_TYPES = {"virtual_ride", "e_bike_fitness", "other"}
 SPORT_MAP = {
     "running": "run", "trail_running": "run", "treadmill_running": "run",
     "cycling": "bike", "indoor_cycling": "bike", "mountain_biking": "bike",
-    "swimming": "swim", "open_water_swimming": "swim",
+    "swimming": "swim", "open_water_swimming": "swim", "lap_swimming": "swim", "pool_swimming": "swim",
     "strength_training": "strength", "fitness_equipment": "strength",
 }
 
