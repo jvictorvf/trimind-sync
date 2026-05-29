@@ -137,7 +137,7 @@ def sync():
     try:
         hrv = api.get_hrv_data(today)
         s = hrv.get("hrvSummary", {})
-        val = s.get("lastNight") or s.get("weeklyAvg")
+        val = s.get("lastNight") or s.get("lastNightAvg") or s.get("weeklyAvg")
         if val: metrics["hrv_ms"] = val; print(f"HRV: {val}ms")
     except Exception as e: print(f"HRV erro: {e}")
     try:
@@ -148,7 +148,13 @@ def sync():
     try:
         rhr = api.get_rhr_day(today)
         val = rhr.get("restingHeartRate") or rhr.get("value")
-        if val: metrics["resting_hr"] = val; print(f"FC repouso: {val}bpm")
+        if not val:
+            try:
+                metrics_map = rhr.get("allMetrics", {}).get("metricsMap", {})
+                rhr_list = metrics_map.get("WELLNESS_RESTING_HEART_RATE", [])
+                if rhr_list: val = int(rhr_list[0].get("value", 0)) or None
+            except: pass
+        if val: metrics["resting_hr"] = int(val); print(f"FC repouso: {val}bpm")
     except Exception as e: print(f"FC erro: {e}")
     if supabase_upsert("daily_metrics", metrics):
         print(f"Salvo! {len(metrics)-2} metricas sincronizadas")
