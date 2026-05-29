@@ -156,6 +156,41 @@ def sync():
             except: pass
         if val: metrics["resting_hr"] = int(val); print(f"FC repouso: {val}bpm")
     except Exception as e: print(f"FC erro: {e}")
+    # Body Battery
+    try:
+        bb = api.get_body_battery(today)
+        if bb and len(bb) > 0:
+            b = bb[0]
+            if b.get("charged"): metrics["body_battery_charged"] = int(b["charged"])
+            if b.get("drained"): metrics["body_battery_drained"] = int(b["drained"])
+            # Pegar valor mais recente do array
+            vals = b.get("bodyBatteryValuesArray", [])
+            if vals: metrics["body_battery_current"] = int(vals[-1][1])
+            print(f"Body Battery: carregou {b.get('charged')} | atual {metrics.get('body_battery_current')}")
+    except Exception as e: print(f"Body Battery erro: {e}")
+
+    # Training Readiness
+    try:
+        tr = api.get_training_readiness(today)
+        if tr and len(tr) > 0:
+            t = tr[0]
+            if t.get("score") is not None: metrics["garmin_readiness_score"] = int(t["score"])
+            if t.get("level"): metrics["garmin_readiness_level"] = t["level"]
+            if t.get("recoveryTime"): metrics["garmin_recovery_time_h"] = round(int(t["recoveryTime"])/60)
+            if t.get("acuteLoad"): metrics["garmin_acute_load"] = int(t["acuteLoad"])
+            print(f"Training Readiness: {t.get('score')} ({t.get('level')}) | Recuperação: {metrics.get('garmin_recovery_time_h')}h")
+    except Exception as e: print(f"Training Readiness erro: {e}")
+
+    # VO2 Max
+    try:
+        ts = api.get_training_status(today)
+        vo2 = ts.get("mostRecentVO2Max", {})
+        run_vo2 = vo2.get("generic", {}).get("vo2MaxPreciseValue")
+        bike_vo2 = vo2.get("cycling", {}).get("vo2MaxPreciseValue")
+        if run_vo2: metrics["vo2max_run"] = float(run_vo2); print(f"VO2 Max corrida: {run_vo2}")
+        if bike_vo2: metrics["vo2max_bike"] = float(bike_vo2); print(f"VO2 Max bike: {bike_vo2}")
+    except Exception as e: print(f"VO2 Max erro: {e}")
+
     if supabase_upsert("daily_metrics", metrics):
         print(f"Salvo! {len(metrics)-2} metricas sincronizadas")
     else:
